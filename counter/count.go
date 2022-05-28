@@ -11,45 +11,51 @@ import (
 //counter . Incr (" get . called ",123) counter . Incr (" get . called ",456)
 
 type counter struct {
-	m     map[string]int64
-	mutex sync.RWMutex
+	m sync.Map
 }
 
 func Init() *counter {
 	return &counter{
-		make(map[string]int64),
-		sync.RWMutex{},
+		sync.Map{},
 	}
 }
 
 func (c *counter) Init() {
-	c.m = make(map[string]int64)
+	c.m = sync.Map{}
 }
 
-func (c *counter) Get(key string) int64 {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+func (c *counter) Get(key string) (count int64) {
 
-	return c.m[key]
+	value, ok := c.m.Load(key)
+	if !ok {
+		return 0
+	}
+	return value.(int64)
 }
 
 func (c *counter) Set(key string, count int64) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	c.m[key] = count
+	c.m.Store(key, count)
 }
 
-func (c *counter) Incr(key string, num int64) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+func (c *counter) Delete(key string) {
+	c.m.Delete(key)
+}
 
-	c.m[key] += num
+//Return the count after Incr
+//If the key is not exist ,Incr will set key to num
+func (c *counter) Incr(key string, num int64) (count int64) {
+	value, ok := c.m.Load(key)
+	if !ok {
+		c.m.Store(key, num)
+		return num
+	}
+	c.m.Store(key, value.(int64)+num)
+	return value.(int64) + num
 }
 
 //counter .Flush2broker(5000, FuncCbFlush )
 // cal FlushCb every 5s and reset counter
-func (c *counter) Flush2broker(ms int, FuncCbFlush func()) {
+func (c *counter) Flush2broker(ms int64, FuncCbFlush func()) {
 	duration := time.Millisecond * time.Duration(ms)
 	ticker := time.NewTicker(duration)
 	for range ticker.C {

@@ -10,12 +10,16 @@ func TestCounter(t *testing.T) {
 	counter := Init()
 
 	counter.Set("a", 100)
-	//log.Println(counter.Get("a"))
 	assert.Equal(t, counter.Get("a"), int64(100))
 
 	counter.Incr("a", 77)
 	assert.Equal(t, counter.Get("a"), int64(177))
+	assert.Equal(t, counter.Get("bbb"), int64(0))
 
+	//counter.Delete("a")
+	assert.Equal(t, counter.Get("a"), int64(0))
+
+	counter.Incr("a", 77)
 	counter.Init()
 	assert.Equal(t, counter.Get("a"), int64(0))
 
@@ -39,14 +43,20 @@ func BenchmarkCounter(b *testing.B) {
 }
 
 //并行测试
+// v1为1050 ns/op
+// v2优化后288ns/op
 func BenchmarkCounterParallel(b *testing.B) {
 	counter := Init()
 	b.ResetTimer()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
+			counter.Set("a", 111)
 			counter.Incr("a", 1)
 			counter.Get("a")
+			counter.Set("b", 111)
+			counter.Incr("b", 1)
+			counter.Get("b")
 		}
 	})
 }
