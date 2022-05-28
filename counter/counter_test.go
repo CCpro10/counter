@@ -11,18 +11,24 @@ func TestCounter(t *testing.T) {
 
 	counter.Set("a", 100)
 	assert.Equal(t, counter.Get("a"), int64(100))
+	assert.Equal(t, counter.Get("b"), int64(0))
 
 	counter.Incr("a", 77)
 	assert.Equal(t, counter.Get("a"), int64(177))
-	assert.Equal(t, counter.Get("bbb"), int64(0))
 
-	//counter.Delete("a")
+	counter.Delete("a")
 	assert.Equal(t, counter.Get("a"), int64(0))
 
 	counter.Incr("a", 77)
 	counter.Init()
 	assert.Equal(t, counter.Get("a"), int64(0))
 
+	counter.Incr("a", 77)
+	counter.Incr("b", 77)
+	nodes := counter.GetAll()
+	for _, node := range nodes {
+		log.Printf("The %v path was visited %v times\n", node.Key, node.Count)
+	}
 }
 
 func TestFlush2broker(t *testing.T) {
